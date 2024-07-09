@@ -2,7 +2,9 @@ import { createPostInput, updatePostInput } from "@par3sh/medium-common";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { Hono } from "hono";
-import { verify } from "hono/jwt";
+
+
+import { authMiddleware } from "../middleware/authmiddleware";
 
 export const blogRouter = new Hono<{
     Bindings: {
@@ -14,26 +16,9 @@ export const blogRouter = new Hono<{
     }
 }>();
 
-blogRouter.use("/*", async (c, next) => {
-    const authHeader = c.req.header("Authorization") || "";
-    try {
-        const user = await verify(authHeader, c.env.JWT_SECRET);
-        if (user) {
-            c.set("userId", user.id as string);
-            await next();
-        } else {
-            c.status(403);
-            return c.json({
-                message: "you are not logged in"
-            });
-        }
-    } catch (error) {
-        c.status(403);
-        return c.json({
-            message: "Invalid token"
-        });
-    }
-});
+
+blogRouter.use("/*", authMiddleware);
+
 
 blogRouter.post('/', async (c) => {
     const authorId = c.get("userId");
@@ -49,18 +34,18 @@ blogRouter.post('/', async (c) => {
             return c.json({ error: "Invalid input"});
         }
         const newPost = await prisma.post.create({
-            data: {
-                title: body.title,
-                content: body.content,
-                authorId: authorId
-            }
+          data: {
+            title: body.title,
+            content: body.content,
+            authorId: authorId
+          },
         });
 
         return c.json({ id: newPost.id });
     } catch (error) {
         console.error('Error creating post:', error);
         c.status(400);
-        return c.json({ message: 'Error creating post', error: error.message });
+        return c.json({ message: 'Error creating post'});
     } finally {
         await prisma.$disconnect();
     }
@@ -76,7 +61,7 @@ blogRouter.put('/', async (c) => {
         const { success } = updatePostInput.safeParse(body);
         if (!success) {
             c.status(400);
-            return c.json({ error: "Invalid input"});
+            return c.json({ error: "Invalid input" });
         }
         const blog = await prisma.post.update({
             where: { id: body.id },
@@ -90,7 +75,7 @@ blogRouter.put('/', async (c) => {
     } catch (error) {
         console.error('Error updating post:', error);
         c.status(400);
-        return c.json({ message: 'Error updating post', error: error.message });
+        return c.json({ message: 'Error updating post' });
     } finally {
         await prisma.$disconnect();
     }
@@ -120,7 +105,7 @@ blogRouter.get('/bulk', async (c) => {
     } catch (error) {
         console.error('Error fetching blog posts:', error);
         c.status(400);
-        return c.json({ message: 'Error fetching blog posts', error: error.message });
+        return c.json({ message: 'Error fetching blog posts' });
     } finally {
         await prisma.$disconnect();
     }
@@ -151,7 +136,7 @@ blogRouter.get('/:id', async (c) => {
     } catch (error) {
         console.error('Error fetching blog post:', error);
         c.status(400);
-        return c.json({ message: 'Error fetching blog post', error: error.message });
+        return c.json({ message: 'Error fetching blog post' });
     } finally {
         await prisma.$disconnect();
     }
