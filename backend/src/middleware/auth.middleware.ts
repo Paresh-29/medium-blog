@@ -15,7 +15,7 @@ export const authMiddleware = async (c: Context, next: () => Promise<void>) => {
     try {
         const user = await verify(token, c.env.JWT_SECRET);
         if (user) {
-            c.set("userId", user.id as string);
+            c.set("userId", user.id);
             await next();
         } else {
             c.status(403);

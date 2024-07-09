@@ -4,7 +4,7 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 import { Hono } from "hono";
 
 
-import { authMiddleware } from "../middleware/authmiddleware";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 export const blogRouter = new Hono<{
     Bindings: {

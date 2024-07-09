@@ -87,12 +87,16 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 import { sign } from "hono/jwt";
 import { signinInput, signupInput } from "@par3sh/medium-common";
 import bcrypt from "bcryptjs";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 
 export const userRouter = new Hono<{
   Bindings: {
     DATABASE_URL: string;
     JWT_SECRET: string;
+  };
+  Variables: {
+    userId: string;
   };
 }>();
 
@@ -169,3 +173,41 @@ userRouter.post("/signin", async (c) => {
     });
   }
 });
+
+
+
+userRouter.get("/me", authMiddleware, async (c) => {
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate());
+
+  const userId = c.get("userId");
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true
+      }
+    });
+    if (!user) {
+      c.status(404);
+      return c.json({
+        error: "User not found",
+      });
+    }
+    return c.json({
+      isLoggedIn: true,
+      user,
+    });
+  } catch (error) {
+    console.error("Status error:", error);
+    c.status(500);
+    return c.json({
+      message: "Error fetching user status",
+    });
+  }
+})
