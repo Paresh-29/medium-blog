@@ -7,12 +7,44 @@ import { useNavigate } from "react-router-dom";
 export const Publish = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+
+  const handleSubmit = async () => {
+    const token = localStorage.getItem("token");
+    setLoading(true);
+
+    if(!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/v1/blog`,
+        {
+          title,
+          content: description,
+        }, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+        }
+      );
+      navigate(`/blog/${response.data.id}`)
+    } catch (error) {
+      console.log("Error publishing post: ", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div>
       <Appbar />
-      <div className="flex justify-center w-full pt-8">
+      <div className="flex justify-center w-full pt-8"> 
         <div className="max-w-screen-lg w-full">
           <input
             onChange={(e) => {
@@ -28,21 +60,7 @@ export const Publish = () => {
             }}
           />
           <button
-            onClick={async () => {
-              const response = await axios.post(
-                `${BACKEND_URL}/api/v1/blog`,
-                {
-                  title,
-                  content: description,
-                },
-                {
-                  headers: {
-                    Authorization: localStorage.getItem("token"),
-                  },
-                }
-              );
-              navigate(`/blog/${response.data.id}`);
-            }}
+            onClick={handleSubmit}
             type="submit"
             className="mt-4 inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-blue-700 rounded-lg focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900 hover:bg-blue-800"
           >
