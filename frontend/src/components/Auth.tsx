@@ -88,6 +88,7 @@ import { ChangeEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BACKEND_URL } from "../config";
 import { signupType, signinType } from "@par3sh/medium-common";
+import { Spinner } from "./Spinner";
 
 interface LabelledInputType {
     label: string;
@@ -113,6 +114,7 @@ function LabelledInput({ label, placeholder, onchange, type }: LabelledInputType
 
 export const Auth = ({ type }: { type: "signup" | "signin" }) => {
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
 
     const initialInputs: signupType | signinType = {
         email: "",
@@ -123,6 +125,7 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
     const [postInputs, setPostInputs] = useState(initialInputs);
 
     async function sendRequest() {
+        setLoading(true)
         try {
             const response = await axios.post(`${BACKEND_URL}/api/v1/user/${type === "signup" ? "signup" : "signin"}`, postInputs);
             const jwt = response.data;
@@ -130,8 +133,18 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
             navigate("/blogs");
         } catch(e) {
             alert("Error while signing up")
+        } finally {
+            setLoading(false)
         }
     }
+
+        if (loading) {
+          return (
+            <div className="h-screen flex justify-center items-center">
+              <Spinner />
+            </div>
+          );
+        }
 
     return (
         <div className="h-screen flex justify-center flex-col">
